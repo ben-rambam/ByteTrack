@@ -38,6 +38,16 @@ def make_parser():
         action="store_true",
         help="whether to save the inference result of image/video",
     )
+    parser.add_argument(
+            "--show_tracks",
+            action="store_true",
+            help="whether to show a live view with detected tracks",
+            )
+    parser.add_argument(
+            "--show_detections",
+            action="store_true",
+            help="whether to show a live view with raw detections",
+            )
 
     # exp file
     parser.add_argument(
@@ -267,71 +277,31 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     timer = Timer()
     frame_id = 0
     results = []
-    fig, ax = plt.subplots()
-    #fig, axtheirs = plt.subplots()
-    #fig, axhist = plt.subplots()
-    plt.ion()
-    plt.show()
-    box_artists = {}
-    label_artists = {}
-    dummy_img = np.linspace(0.0,255.0,int(width*height*3)).reshape((int(height),int(width),3))
-    img_artist = ax.imshow(dummy_img)
-    detect_artists = []
+    if args.show_tracks or args.show_detections:
+        fig, ax = plt.subplots()
+        #plt.ion()
+        plt.show(block=False)
+        track_artists = {}
+        track_label_artists = {}
+        dummy_img = np.linspace(0.0,255.0,int(width*height*3)).reshape((int(height),int(width),3))
+        img_artist = ax.imshow(dummy_img)
+        detect_artists = []
+        det_label_artists = []
+        fps = 30
+        fps_artist = ax.text(10,10,'frame {} ({:.2f} fps)'.format(frame_id, fps), 
+                color='g',verticalalignment='bottom')
     while True:
-        if frame_id % 20 == 0:
-            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
-        #for i in range(3):
-        #    cap.grab()
+        fps = 1. / max(1e-5, timer.average_time)
 
-        #ret_val, frame = cap.retrieve()
-        for i in range(2):
+
+        for i in range(1):
             ret_val, frame = cap.read()
         frame = frame[...,::-1].copy()
-        #ret_val, frame = cap.read()
+
+        if frame_id % 20 == 0:
+            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, fps))
         if ret_val:
             outputs, img_info = predictor.inference(frame, timer)
-            #print(len(outputs))
-            #logger.info('outputs: {}'.format(len(outputs)))
-            #ax.clear()
-            #ax.imshow(frame)
-            img_artist.set_data(frame)
-            if outputs[0] is not None:
-                #logger.info('outputs[0]: {}'.format(outputs[0].size()))
-                narr = outputs[0].cpu().detach().numpy()
-                #print(narr[:,:4])
-                scale = img_info['ratio']
-                #print(scale)
-                narr[:,:4] /= scale
-                #print(narr[:,:4])
-                #logger.info('narr: {}'.format(narr.shape))
-                #axhist.clear()
-                #axhist.hist(narr[:,4], bins=np.linspace(0,1,21))
-                #axhist.set_xlim(0,1)
-
-                #print("scores0: {}".format(narr[:,4]))
-                #print("scores1: {}".format(narr[:,5]))
-                i = 0
-                for out in narr:
-                    corners = [
-                            [out[0], out[2], out[2], out[0], out[0]],
-                            [out[1], out[1], out[3], out[3], out[1]]
-                            ]
-                    try:
-                        detect_artists[i].set_data(corners)
-                    except IndexError as e:
-                        temp = ax.plot(corners[0], corners[1],'r--',alpha=out[4]*out[5])
-                        detect_artists.append(temp[0])
-                    i += 1
-
-                while i < len(detect_artists):
-                    detect_artists[i].set_data([[],[]])
-                    i += 1
-
-                    #rect = plt.Rectangle(
-                    #    (out[0], out[1]), out[2]-out[0], out[3]-out[1], 
-                    #    linewidth=1, edgecolor='r', facecolor='none',
-                    #    alpha=out[4]*out[5])
-                    #ax.add_patch(rect)
 
             if outputs[0] is not None:
                 online_targets = tracker.update(outputs[0], [img_info['height'], img_info['width']], exp.test_size)
@@ -342,63 +312,96 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
                     tlwh = t.tlwh
                     tid = t.track_id
                     vertical = tlwh[2] / tlwh[3] > args.aspect_ratio_thresh
-                    if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
+                    area = tlwh[2]*tlwh[3]
+                    #if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
+                    if area <= args.min_box_area:
+                        logger.info("{} too small".format(tid))
+                    else: 
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(t.score)
                         results.append(
                             f"{frame_id},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                         )
-                        top, left, height, width = tlwh
-                        corners = np.array([                        
-                                [top, top, top+height, top+height, top],
-                                [left, left+width, left+width, left, left],
-                        ])
-                        #* img_info['ratio']
-                        try:
-                            box_artists[tid].set_data(corners)
-                            label_artists[tid].set_x(top)
-                            label_artists[tid].set_y(left)
-                        except KeyError as e:
-                            logger.info("Index {} appeared".format(tid))
-                            temp = ax.plot(corners[0],corners[1])
-                            #print("temp:",temp)
-                            #box_artists.append(temp[0])
-                            box_artists[tid] = temp[0]
-                            temp_label = ax.text(top,left,str(tid),verticalalignment='bottom', color=temp[0].get_color())
-                            label_artists[tid] = temp_label
-                to_delete = []
-                for tid in box_artists:
-                    if tid not in online_ids:
-                        logger.info("Index {} disappeared".format(tid))
-                        box_artists[tid].set_data([[],[]])
-                        label_artists[tid].set_text("")
-                        to_delete.append(tid)
-                for tid in to_delete:
-                    del box_artists[tid]
-                    del label_artists[tid]
-
                 timer.toc()
-
-                #online_im = plot_tracking(
-                #    img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id + 1, fps=1. / timer.average_time
-                #)
             else:
                 timer.toc()
                 online_im = img_info['raw_img']
+
+            if args.show_detections or args.show_tracks:
+                fps_artist.set_text('frame {} ({:.2f} fps)'.format(frame_id, fps))
+                fps_artist.set_verticalalignment('bottom')
+                ax.set_xlim(0,frame.shape[1])
+                ax.set_ylim(frame.shape[0],0)
+                img_artist.set_data(frame)
+
+            if args.show_detections and outputs[0] is not None:
+                narr = outputs[0].cpu().detach().numpy()
+                scale = img_info['ratio']
+                narr[:,:4] /= scale
+                i = 0
+                for out in narr:
+                    corners = [
+                            [out[0], out[2], out[2], out[0], out[0]],
+                            [out[1], out[1], out[3], out[3], out[1]]
+                            ]
+                    try:
+                        detect_artists[i].set_data(corners)
+                        det_label_artists[i].set_x(out[0])
+                        det_label_artists[i].set_y(out[1])
+                        det_label_artists[i].set_text("{}".format(int(out[4]*out[5]*100)))
+                    except IndexError as e:
+                        temp = ax.plot(corners[0], corners[1],'r--',alpha=out[4]*out[5])
+                        detect_artists.append(temp[0])
+                        temp_label = ax.text(out[0],out[1],
+                                "{}".format(int(out[4]*out[5]*100)),
+                                verticalalignment='top', 
+                                color=temp[0].get_color(),
+                                alpha=out[4]*out[5])
+                        det_label_artists.append(temp_label)
+                    i += 1
+
+                while i < len(detect_artists):
+                    detect_artists[i].set_data([[],[]])
+                    det_label_artists[i].set_text("")
+                    i += 1
+
+            if args.show_tracks:
+                for tlwh, tid in zip(online_tlwhs, online_ids):
+                    top, left, height, width = tlwh
+                    corners = np.array([                        
+                            [top, top, top+height, top+height, top],
+                            [left, left+width, left+width, left, left],
+                    ])
+                    #* img_info['ratio']
+                    try:
+                        track_artists[tid].set_data(corners)
+                        track_label_artists[tid].set_x(top)
+                        track_label_artists[tid].set_y(left)
+                    except KeyError as e:
+                        logger.info("Index {} appeared".format(tid))
+                        temp = ax.plot(corners[0],corners[1])
+                        track_artists[tid] = temp[0]
+                        temp_label = ax.text(top,left,str(tid),verticalalignment='bottom', color=temp[0].get_color())
+                        track_label_artists[tid] = temp_label
+                to_delete = []
+                for tid in track_artists:
+                    if tid not in online_ids:
+                        logger.info("Index {} disappeared".format(tid))
+                        track_artists[tid].set_data([[],[]])
+                        track_label_artists[tid].set_text("")
+                        to_delete.append(tid)
+                for tid in to_delete:
+                    del track_artists[tid]
+                    del track_label_artists[tid]
+
             if args.save_result:
                 #axtheirs.imshow(online_im)
                 pass
                 #vid_writer.write(online_im)
-            #ch = cv2.waitKey(1)
-            #if ch == 27 or ch == ord("q") or ch == ord("Q"):
-            #    break
-            #if frame_id >= 100:
-            #    break
-            ax.set_xlim(0,img_info['width'])
-            ax.set_ylim(img_info['height'],0)
-            plt.draw()
-            plt.pause(0.001)
+            if args.show_detections or args.show_tracks and frame_id % 1 == 0:
+                fig.canvas.draw()
+                fig.canvas.flush_events()
         else:
             break
         frame_id += 1
