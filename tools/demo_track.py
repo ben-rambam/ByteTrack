@@ -39,15 +39,20 @@ def make_parser():
         help="whether to save the inference result of image/video",
     )
     parser.add_argument(
-            "--show_tracks",
-            action="store_true",
-            help="whether to show a live view with detected tracks",
-            )
+        "--show_tracks",
+        action="store_true",
+        help="whether to show a live view with detected tracks",
+    )
     parser.add_argument(
-            "--show_detections",
-            action="store_true",
-            help="whether to show a live view with raw detections",
-            )
+        "--show_detections",
+        action="store_true",
+        help="whether to show a live view with raw detections",
+    )
+    parser.add_argument(
+        "--save_events",
+        action="store_true",
+        help="whether to save images when an object enters or leaves the scene",
+    )
 
     # exp file
     parser.add_argument(
@@ -90,15 +95,19 @@ def make_parser():
         help="Using TensorRT model for testing.",
     )
     # tracking args
-    parser.add_argument("--track_thresh", type=float, default=0.5, help="tracking confidence threshold")
-    parser.add_argument("--track_buffer", type=int, default=30, help="the frames for keep lost tracks")
-    parser.add_argument("--match_thresh", type=float, default=0.8, help="matching threshold for tracking")
+    parser.add_argument("--track_thresh", type=float, default=0.5,
+                        help="tracking confidence threshold")
+    parser.add_argument("--track_buffer", type=int, default=30,
+                        help="the frames for keep lost tracks")
+    parser.add_argument("--match_thresh", type=float, default=0.8,
+                        help="matching threshold for tracking")
     parser.add_argument(
         "--aspect_ratio_thresh", type=float, default=1.6,
         help="threshold for filtering out boxes of which aspect ratio are above the given value."
     )
     parser.add_argument('--min_box_area', type=float, default=10, help='filter out tiny boxes')
-    parser.add_argument("--mot20", dest="mot20", default=False, action="store_true", help="test mot20.")
+    parser.add_argument("--mot20", dest="mot20", default=False,
+                        action="store_true", help="test mot20.")
     return parser
 
 
@@ -121,7 +130,8 @@ def write_results(filename, results):
                 if track_id < 0:
                     continue
                 x1, y1, w, h = tlwh
-                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1), s=round(score, 2))
+                line = save_format.format(frame=frame_id, id=track_id, x1=round(
+                    x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1), s=round(score, 2))
                 f.write(line)
     logger.info('save results to {}'.format(filename))
 
@@ -138,12 +148,13 @@ class Predictor(object):
     ):
         self.model = model
         self.decoder = decoder
-        print("decoder", decoder)
+        print("decoder:", decoder)
         self.num_classes = exp.num_classes
         print("num classes:", self.num_classes)
         self.confthre = exp.test_conf
         self.nmsthre = exp.nmsthre
         self.test_size = exp.test_size
+        print("predictor size:", self.test_size)
         self.device = device
         self.fp16 = fp16
         if trt_file is not None:
@@ -202,7 +213,8 @@ def image_demo(predictor, vis_folder, current_time, args):
     for frame_id, img_path in enumerate(files, 1):
         outputs, img_info = predictor.inference(img_path, timer)
         if outputs[0] is not None:
-            online_targets = tracker.update(outputs[0], [img_info['height'], img_info['width']], exp.test_size)
+            online_targets = tracker.update(
+                outputs[0], [img_info['height'], img_info['width']], exp.test_size)
             online_tlwhs = []
             online_ids = []
             online_scores = []
@@ -220,7 +232,8 @@ def image_demo(predictor, vis_folder, current_time, args):
                     )
             timer.toc()
             online_im = plot_tracking(
-                img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id, fps=1. / timer.average_time
+                img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id, fps=1. /
+                timer.average_time
             )
         else:
             timer.toc()
@@ -234,7 +247,8 @@ def image_demo(predictor, vis_folder, current_time, args):
             cv2.imwrite(osp.join(save_folder, osp.basename(img_path)), online_im)
 
         if frame_id % 20 == 0:
-            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
+            logger.info('Processing frame {} ({:.2f} fps)'.format(
+                frame_id, 1. / max(1e-5, timer.average_time)))
 
         ch = cv2.waitKey(0)
         if ch == 27 or ch == ord("q") or ch == ord("Q"):
@@ -249,11 +263,11 @@ def image_demo(predictor, vis_folder, current_time, args):
 
 def imageflow_demo(predictor, vis_folder, current_time, args):
     url = eval(args.path) if args.path.isnumeric() else args.path
-    if 'youtube.com/' in str(url) or 'youtu.be/' in str(url):  # if source is YouTube video
-        #check_requirements(('pafy', 'youtube_dl'))
-        import pafy
-        url = pafy.new(url).getbest(preftype="mp4").url
-        logger.info("pafy url: {}".format(url))
+    #if 'youtube.com/' in str(url) or 'youtu.be/' in str(url):  # if source is YouTube video
+    #    #check_requirements(('pafy', 'youtube_dl'))
+    #    import pafy
+    #    url = pafy.new(url).getbest(preftype="mp4").url
+    #    logger.info("pafy url: {}".format(url))
     cap = cv2.VideoCapture(url if args.demo == "video" else args.camid)
     assert cap.isOpened(), "Couldn't open: {}".format(args.path)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
@@ -275,51 +289,65 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     )
     tracker = BYTETracker(args, frame_rate=30)
     timer = Timer()
+    total_timer = Timer()
     frame_id = 0
     results = []
     if args.show_tracks or args.show_detections:
         fig, ax = plt.subplots()
-        #plt.ion()
+        # plt.ion()
         plt.show(block=False)
         track_artists = {}
         track_label_artists = {}
-        dummy_img = np.linspace(0.0,255.0,int(width*height*3)).reshape((int(height),int(width),3))
+        dummy_img = np.linspace(0.0, 255.0, int(width*height*3)
+                                ).reshape((int(height), int(width), 3))
         img_artist = ax.imshow(dummy_img)
         detect_artists = []
         det_label_artists = []
         fps = 30
-        fps_artist = ax.text(10,10,'frame {} ({:.2f} fps)'.format(frame_id, fps), 
-                color='g',verticalalignment='bottom')
-    while True:
-        fps = 1. / max(1e-5, timer.average_time)
+        fps_artist = ax.text(10, 10, 'frame {} ({:.2f} fps)'.format(frame_id, fps),
+                             color='g', verticalalignment='bottom')
+    if args.save_events:
+        prev_tlwhs = []
+        prev_ids = []
+        prev_classes = []
+        img_fig, img_ax = plt.subplots()
 
+    while True:
+        total_timer.tic()
+        fps = 1. / max(1e-5, total_timer.average_time)
 
         for i in range(1):
             ret_val, frame = cap.read()
-        frame = frame[...,::-1].copy()
 
         if frame_id % 20 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, fps))
         if ret_val:
+            #frame_rgb = frame[..., ::-1].copy()
+            #frame = cv2.GaussianBlur(frame_rgb, (5,5), 0)
+            #frame = cv2.medianBlur(frame_rgb, 7)
+            #frame = frame_rgb
             outputs, img_info = predictor.inference(frame, timer)
 
             if outputs[0] is not None:
-                online_targets = tracker.update(outputs[0], [img_info['height'], img_info['width']], exp.test_size)
+                online_targets = tracker.update(
+                    outputs[0], [img_info['height'], img_info['width']], exp.test_size)
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
+                online_classes = []
                 for t in online_targets:
                     tlwh = t.tlwh
                     tid = t.track_id
                     vertical = tlwh[2] / tlwh[3] > args.aspect_ratio_thresh
                     area = tlwh[2]*tlwh[3]
-                    #if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
+                    # if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
                     if area <= args.min_box_area:
                         logger.info("{} too small".format(tid))
-                    else: 
+                    else:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(t.score)
+                        online_classes.append(t.myclass)
                         results.append(
                             f"{frame_id},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                         )
@@ -331,80 +359,126 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
             if args.show_detections or args.show_tracks:
                 fps_artist.set_text('frame {} ({:.2f} fps)'.format(frame_id, fps))
                 fps_artist.set_verticalalignment('bottom')
-                ax.set_xlim(0,frame.shape[1])
-                ax.set_ylim(frame.shape[0],0)
+                ax.set_xlim(0, frame.shape[1])
+                ax.set_ylim(frame.shape[0], 0)
                 img_artist.set_data(frame)
 
             if args.show_detections and outputs[0] is not None:
                 narr = outputs[0].cpu().detach().numpy()
                 scale = img_info['ratio']
-                narr[:,:4] /= scale
+                narr[:, :4] /= scale
                 i = 0
                 for out in narr:
                     corners = [
-                            [out[0], out[2], out[2], out[0], out[0]],
-                            [out[1], out[1], out[3], out[3], out[1]]
-                            ]
+                        [out[0], out[2], out[2], out[0], out[0]],
+                        [out[1], out[1], out[3], out[3], out[1]]
+                    ]
                     try:
                         detect_artists[i].set_data(corners)
                         det_label_artists[i].set_x(out[0])
                         det_label_artists[i].set_y(out[1])
                         det_label_artists[i].set_text("{}".format(int(out[4]*out[5]*100)))
                     except IndexError as e:
-                        temp = ax.plot(corners[0], corners[1],'r--',alpha=out[4]*out[5])
+                        temp = ax.plot(corners[0], corners[1], 'r--', alpha=out[4]*out[5])
                         detect_artists.append(temp[0])
-                        temp_label = ax.text(out[0],out[1],
-                                "{}".format(int(out[4]*out[5]*100)),
-                                verticalalignment='top', 
-                                color=temp[0].get_color(),
-                                alpha=out[4]*out[5])
+                        temp_label = ax.text(out[0], out[1],
+                                             "{}".format(int(out[4]*out[5]*100)),
+                                             verticalalignment='top',
+                                             color=temp[0].get_color(),
+                                             alpha=out[4]*out[5])
                         det_label_artists.append(temp_label)
                     i += 1
 
                 while i < len(detect_artists):
-                    detect_artists[i].set_data([[],[]])
+                    detect_artists[i].set_data([[], []])
                     det_label_artists[i].set_text("")
                     i += 1
 
             if args.show_tracks:
                 for tlwh, tid in zip(online_tlwhs, online_ids):
-                    top, left, height, width = tlwh
-                    corners = np.array([                        
-                            [top, top, top+height, top+height, top],
-                            [left, left+width, left+width, left, left],
+                    left, top, width, height = tlwh
+                    corners = np.array([
+                        [left, left+width, left+width, left, left],
+                        [top, top, top+height, top+height, top],
                     ])
-                    #* img_info['ratio']
+                    # * img_info['ratio']
                     try:
                         track_artists[tid].set_data(corners)
-                        track_label_artists[tid].set_x(top)
-                        track_label_artists[tid].set_y(left)
+                        track_label_artists[tid].set_x(left)
+                        track_label_artists[tid].set_y(top)
                     except KeyError as e:
                         logger.info("Index {} appeared".format(tid))
-                        temp = ax.plot(corners[0],corners[1])
+                        temp = ax.plot(corners[0], corners[1])
                         track_artists[tid] = temp[0]
-                        temp_label = ax.text(top,left,str(tid),verticalalignment='bottom', color=temp[0].get_color())
+                        temp_label = ax.text(left, top, str(
+                            tid), verticalalignment='bottom', color=temp[0].get_color())
                         track_label_artists[tid] = temp_label
                 to_delete = []
                 for tid in track_artists:
                     if tid not in online_ids:
                         logger.info("Index {} disappeared".format(tid))
-                        track_artists[tid].set_data([[],[]])
+                        track_artists[tid].set_data([[], []])
                         track_label_artists[tid].set_text("")
                         to_delete.append(tid)
                 for tid in to_delete:
                     del track_artists[tid]
                     del track_label_artists[tid]
 
+            if args.save_events:
+                for tlwh, tid, tclass in zip(online_tlwhs, online_ids, online_classes):
+                    if tid not in prev_ids:
+                        left, top, width, height = tlwh
+                        corners = np.array([
+                            [left, left+width, left+width, left, left],
+                            [top, top, top+height, top+height, top],
+                        ])
+                        img_ax.clear()
+                        img_ax.imshow(frame)
+                        img_ax.plot(corners[0], corners[1], 'g')
+                        img_ax.text(left, top, str(tid))
+                        img_ax.set_title("object {} from class {} appeared in frame {}".format(
+                            tid, int(tclass), frame_id))
+                        img_ax.set_xlim(0, frame.shape[1])
+                        img_ax.set_ylim(frame.shape[0], 0)
+                        img_fig.savefig(osp.join(save_folder, "{:03d}_{:04d}_{:05d}.png".format(int(tclass), tid, frame_id)),
+                                        bbox_inches='tight',
+                                        transparent=True)
+                for tlwh, tid, tclass in zip(prev_tlwhs, prev_ids, prev_classes):
+                    if tid not in online_ids:
+                        left, top, width, height = tlwh
+                        corners = np.array([
+                            [left, left+width, left+width, left, left],
+                            [top, top, top+height, top+height, top],
+                        ])
+                        img_ax.clear()
+                        img_ax.imshow(prev_frame)
+                        img_ax.plot(corners[0], corners[1], 'r')
+                        img_ax.text(left, top, str(tid))
+                        img_ax.set_title("object {} from class {} disappeared in frame {}".format(
+                            tid, int(tclass), frame_id))
+                        img_ax.set_xlim(0, frame.shape[1])
+                        img_ax.set_ylim(frame.shape[0], 0)
+                        img_fig.savefig(osp.join(save_folder, 
+                            "{:03d}_{:04d}_{:05d}.png".format(int(tclass), tid, frame_id)),
+                                        bbox_inches='tight',
+                                        transparent=True)
+
+                prev_ids = online_ids
+                prev_tlwhs = online_tlwhs
+                prev_classes = online_classes
+                prev_frame = frame.copy()
+
             if args.save_result:
-                #axtheirs.imshow(online_im)
+                # axtheirs.imshow(online_im)
                 pass
-                #vid_writer.write(online_im)
+                # vid_writer.write(online_im)
             if args.show_detections or args.show_tracks and frame_id % 1 == 0:
                 fig.canvas.draw()
                 fig.canvas.flush_events()
         else:
             break
         frame_id += 1
+        total_timer.toc()
 
     if args.save_result:
         res_file = osp.join(vis_folder, f"{timestamp}.txt")
