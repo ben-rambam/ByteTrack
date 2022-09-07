@@ -4,121 +4,20 @@
 <body>
 <div id="instance_list">
     <h1>Tracked Instances</h1>
-     <label class="instance_card">One
-           <input type="checkbox" checked="checked">
-             <span class="checkmark"></span>
-     </label>
+	<script>
+		let instances = ["5", "8", "12", "1", "2"];
 
-     <label class="instance_card">Two
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
+		let list = document.getElementById("instance_list");
 
-     <label class="instance_card">Three
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
+		instances.forEach( (item) => {
+			let label = document.createElement("label");
+			label.innerText = item;
+			label.className = "instance_card";
+			label.innerHTML = item + '<input type="checkbox"> <span class="checkmark"></span>';
+			list.appendChild(label);
+		});
 
-     <label class="instance_card">Four
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label> 
-     <label class="instance_card">One
-           <input type="checkbox" checked="checked">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Two
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Three
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Four
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label> 
-     <label class="instance_card">One
-           <input type="checkbox" checked="checked">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Two
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Three
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Four
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label> 
-     <label class="instance_card">One
-           <input type="checkbox" checked="checked">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Two
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Three
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Four
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label> 
-     <label class="instance_card">One
-           <input type="checkbox" checked="checked">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Two
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Three
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Four
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label> 
-     <label class="instance_card">One
-           <input type="checkbox" checked="checked">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Two
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Three
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label>
-
-     <label class="instance_card">Four
-           <input type="checkbox">
-             <span class="checkmark"></span>
-     </label> 
-
+	</script>
 </div>
 <div id="below_top_nav">
 <h1>Timeline</h1>
