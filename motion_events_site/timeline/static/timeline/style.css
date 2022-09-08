@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bree+Serif&family=EB+Garamond:ital,wght@0,500;1,800&display=swap');
+
+:root {
+    /* Pallette */
+    --white-color: #fff;
+    --black-color: #42413d;
+
+    /* CSS HSL */
+    --tea-green: hsla(82, 49%, 81%, 1);
+    --cadet-blue: hsla(188, 36%, 52%, 1);
+    --spanish-viridian: hsla(161, 82%, 27%, 1);
+    --gunmetal: hsla(220, 15%, 20%, 1);
+    --cinnabar: hsla(8, 67%, 52%, 1);
+
+    --primary-color: var(--spanish-viridian);
+    --secondary-color: var(--tea-green);
+    --tertiary-color: var(--cadet-blue);
+    --destructive-color: var(--cinnabar);
+    --text-on-light-bg-color: var(--black-color);
+    --text-on-dark-bg-color: var(--white-color);
+}
+
+
+body {
+    margin: 0;
+    background: var(--secondary-color);
+    #background-image: linear-gradient( to right, #ffffb3,#ffe6e6);
+    background-attachment: fixed;   
+    background-size: cover;
+  
+    }
+
+#below_top_nav{
+    margin-left: 220px;
+}
+
+#below_top_nav h1 {
+  margin-left: 16px;
+}
+
+#instance_list{
+    position: fixed;
+    background: var(--tertiary-color);
+    display: inline-block;
+    width: 220px;
+    height: 100%;
+    vertical-align: top;
+    margin: 0px 0px;
+    top:0;
+	overflow-y: scroll;
+
+}
+
+#instance_list h1 {
+	padding-left: 16px;
+}
+#event_list{
+    #position: fixed;
+    width: 100%;
+    display: inline-block;
+	text-align: left;
+}
+
+.event_card{
+    box-shadow: 0 15px 30px 1px grey;
+    background: var(--white-color);
+    text-align: left;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 1em auto;
+    margin-left: 16px;
+    height: 200px;
+    #width: 1000px;
+	width: 90%;
+}
+
+.event_card img {
+	display: inline-block;
+	height: 100%;
+}
+
+.details {
+	text-align: left;
+	margin-left: 16px;
+	display: inline-block;
+	#width: 350px;
+	#height: 100%;
+	vertical-align: top;
+	font-size: 22px;
+}
+
+/* The instance_card */
+.instance_card {
+  display: block;
+  position: relative;
+  padding-left: 51px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-size: 22px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Hide the browser's default checkbox 
+*/
+.checkable_event input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Hide the browser's default checkbox */
+.instance_card input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 16px;
+  height: 25px;
+  width: 25px;
+  background-color: #eee;
+}
+
+.event_card:hover {
+background-color: #ccc;
+}
+
+.checkable_event input:checked ~ .event_card{
+  background-color: var(--primary-color);
+}
+
+/* On mouse-over, add a grey background color */
+.instance_card:hover input ~ .checkmark {
+  background-color: #ccc;
+}
+
+/* When the checkbox is checked, add a blue background */
+.instance_card input:checked ~ .checkmark {
+  background-color: var(--primary-color);
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+/* Show the checkmark when checked */
+.instance_card input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Style the checkmark/indicator */
+.instance_card .checkmark:after {
+  left: 9px;
+  top: 5px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+

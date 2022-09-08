@@ -189,7 +189,8 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
     logger.info("image height: {}".format(height))
     fps = cap.get(cv2.CAP_PROP_FPS)
     timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
-    save_folder = osp.join(vis_folder, timestamp)
+    #save_folder = osp.join(vis_folder, timestamp)
+    save_folder = "timeline/static/timeline/images"
     os.makedirs(save_folder, exist_ok=True)
     if args.demo == "video":
         #save_path = osp.join(save_folder, args.path.split("/")[-1])
@@ -344,12 +345,6 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                 for tlwh, tid, tclass in zip(online_tlwhs, online_ids, online_classes):
                     trackable_class = trackable_class_dict[tclass]
                     if tid not in prev_ids:
-                        trackable = Trackable(name=str(tid), trackable_class=trackable_class)
-                        trackable.save()
-                        trackables[tid] = trackable
-
-                        event = Event(trackable=trackable, date=timezone.now(), event_type='A')
-                        event.save()
 
                         left, top, width, height = tlwh
                         corners = np.array([
@@ -373,10 +368,27 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                         img_fig.savefig(fig_path,
                                         bbox_inches='tight',
                                         transparent=True)
+
+                        trackable = Trackable(name=str(tid), trackable_class=trackable_class)
+                        trackable.save()
+                        trackables[tid] = trackable
+
+                        event = Event(
+                                trackable=trackable, 
+                                date=timezone.now(), 
+                                event_type='A', 
+                                image_path=osp.join("timeline/images",
+                                    "{:03d}_{:04d}_{:05d}.png".format(int(tclass), tid, frame_id)))
+                        event.save()
                 for tlwh, tid, tclass in zip(prev_tlwhs, prev_ids, prev_classes):
                     if tid not in online_ids:
                         trackable = trackables[tid]
-                        event = Event(trackable=trackable, date=timezone.now(), event_type='D')
+                        event = Event(
+                                trackable=trackable, 
+                                date=timezone.now(), 
+                                event_type='D', 
+                                image_path=osp.join("timeline/images",
+                                    "{:03d}_{:04d}_{:05d}.png".format(int(tclass), tid, frame_id)))
                         event.save()
                         left, top, width, height = tlwh
                         corners = np.array([
@@ -387,10 +399,12 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                         img_ax.imshow(prev_frame)
                         img_ax.plot(corners[0], corners[1], 'r')
                         img_ax.text(left, top, str(tid))
-                        img_ax.set_title("object {} from class {} disappeared in frame {}".format(
-                            tid, int(tclass), frame_id))
+                        #img_ax.set_title("object {} from class {} disappeared in frame {}".format(
+                        #    tid, int(tclass), frame_id))
                         img_ax.set_xlim(0, frame.shape[1])
                         img_ax.set_ylim(frame.shape[0], 0)
+                        img_ax.set_xticks([])
+                        img_ax.set_yticks([])
                         img_fig.savefig(osp.join(save_folder, 
                             "{:03d}_{:04d}_{:05d}.png".format(int(tclass), tid, frame_id)),
                                         bbox_inches='tight',

@@ -1,0 +1,48 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="{% static 'timeline/style.css' %}">
+
+<body>
+<div id="instance_list">
+    <h1>Tracked Instances</h1>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
+    <ul>
+    {% for trackable in trackable_list %}
+    <label class="instance_card">
+        {{ trackable.name }}
+            <input type="checkbox"> 
+            <span class="checkmark"></span>
+    </label>
+    {% endfor %}
+    </ul>
+
+</div>
+<div id="below_top_nav">
+<h1>Timeline</h1>
+<div id="event_list">
+    {% for event in event_list %}
+    <label class="checkable_event">
+        <input type="checkbox">
+        <div class="event_card">	
+            
+            <img src="{% static event.image_path %}" alt="">
+            <div class="details">
+            <ul>
+                <li><strong>Instance ID  : </strong>{{event.trackable.name}}</li>
+                <li><strong>Event type   : </strong>{{event.get_event_type_display}}</li>
+                <li><strong>Class        : </strong>{{event.trackable.trackable_class.name}}</li>
+                <li><strong>Time         : </strong>{{event.date}}</li>
+                <li><strong>Image path   : </strong>{% static event.image_path %}</li>
+            </ul>
+            </div>
+
+        </div>
+    </label>
+    {% endfor %}
+		
+</div>
+
+</div>
+</body>

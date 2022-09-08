@@ -26,6 +26,7 @@ class Event(models.Model):
         DISAPPEARED = 'D', ('Disappeared')
 
     event_type = models.CharField(choices=EventType.choices, max_length=2)
+    image_path = models.CharField(max_length=200, default="timeline/images/placeholder.png")
 
     def __str__(self):
         return "Trackable {} {} on {}".format(self.trackable, self.get_event_type_display(), self.date)
