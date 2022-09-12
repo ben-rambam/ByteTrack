@@ -341,9 +341,12 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                     del track_artists[tid]
                     del track_label_artists[tid]
 
-            if args.save_events:
+            if args.save_events and outputs[0] is not None:
                 for tlwh, tid, tclass in zip(online_tlwhs, online_ids, online_classes):
-                    trackable_class = trackable_class_dict[tclass]
+                    try:
+                        trackable_class = trackable_class_dict[tclass]
+                    except:
+                        continue
                     if tid not in prev_ids:
 
                         left, top, width, height = tlwh
@@ -382,7 +385,10 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                         event.save()
                 for tlwh, tid, tclass in zip(prev_tlwhs, prev_ids, prev_classes):
                     if tid not in online_ids:
-                        trackable = trackables[tid]
+                        try:
+                            trackable = trackables[tid]
+                        except:
+                            continue
                         event = Event(
                                 trackable=trackable, 
                                 date=timezone.now(), 
