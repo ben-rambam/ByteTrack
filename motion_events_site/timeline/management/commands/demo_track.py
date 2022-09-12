@@ -355,7 +355,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                             [top, top, top+height, top+height, top],
                         ])
                         img_ax.clear()
-                        img_ax.imshow(frame)
+                        img_ax.imshow(frame[...,::-1])
                         img_ax.plot(corners[0], corners[1], 'g')
                         img_ax.text(left, top, str(tid))
                         #img_ax.set_title("object {} from class {} appeared in frame {}".format(
@@ -402,7 +402,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args, exp):
                             [top, top, top+height, top+height, top],
                         ])
                         img_ax.clear()
-                        img_ax.imshow(prev_frame)
+                        img_ax.imshow(prev_frame[...,::-1])
                         img_ax.plot(corners[0], corners[1], 'r')
                         img_ax.text(left, top, str(tid))
                         #img_ax.set_title("object {} from class {} disappeared in frame {}".format(
